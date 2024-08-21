@@ -157,6 +157,5 @@ def send_dev_signal(device):
         time.sleep(0.05)
 
 
-
 if __name__ == '__main__':
     socketio.run(app, debug=True)

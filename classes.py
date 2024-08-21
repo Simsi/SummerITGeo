@@ -19,7 +19,7 @@ class SeedLinkTimeGroupedThreeChansPacket():
         self.signal_dict = signal_dict if signal_dict is not None else {"CXE": None, "CXN": None, "CXZ": None}
         self.gps_lat = gps_lat
         self.gps_lon = gps_lon
-        print(self.signal_dict)
+        # print(self.signal_dict)
 
     def get_buffer_if_all_chans_got(self):
         if self.is_not_empty_channels_in_dict():
