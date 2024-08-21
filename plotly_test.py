@@ -3,7 +3,7 @@ from dash import html, dcc, Input, Output
 from dash.exceptions import PreventUpdate
 import requests
 import plotly.graph_objects as go
-from plotly.tools import make_subplots
+from plotly.subplots import make_subplots
 
 app = dash.Dash(__name__)
 

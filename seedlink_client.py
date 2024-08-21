@@ -1,6 +1,6 @@
 import threading
 from obspy.clients.seedlink.easyseedlink import create_client
-from classes import Device
+from src.tools.Device import Device
 from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
