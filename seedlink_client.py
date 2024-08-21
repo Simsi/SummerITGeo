@@ -2,8 +2,9 @@ import threading
 from obspy.clients.seedlink.easyseedlink import create_client
 from classes import Device
 from collections import deque
-from flask import Flask, render_template, request, jsonify
-
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse
+import json
 
 class SeisCompClient:
     def __init__(self,
@@ -86,14 +87,15 @@ client = SeisCompClient(server_address=server_address,
 )
 thread = threading.Thread(target=client.run).start()
 
-app = Flask(__name__)
+class Handler(BaseHTTPRequestHandler):
 
-@app.get("/devices")
-def get_devices():
-    return jsonify(tuple(client.devices.keys()))
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        if parsed.path == "/data":
+            self.wfile.write(json.dumps(tuple(queue)).encode("utf-8"))
+        elif parsed.path == "/devices":
+            self.wfile.write(json.dumps(tuple(client.devices.keys())).encode("utf-8"))
 
-@app.get("/data")
-def get_latest_data():
-    return jsonify(tuple(client.queue))
-
-app.run(host="0.0.0.0", port=5000, debug=1)
+HTTPServer(('0.0.0.0', 8000), Handler).serve_forever()
