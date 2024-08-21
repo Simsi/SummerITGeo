@@ -1,26 +1,22 @@
-import multiprocessing.managers
-import multiprocessing.process
 import threading
 from obspy.clients.seedlink.easyseedlink import create_client
 from classes import Device
 from collections import deque
 from flask import Flask, render_template, request, jsonify
-import multiprocessing
 
 
-class SeisCompClient(multiprocessing.Process):
+class SeisCompClient:
     def __init__(self,
                 server_address: str,
                 streams: tuple[str, str, str],
-                deque: multiprocessing.Queue,
-                devices_dict: dict,
+                deque: deque,
                 debug=False):
         super().__init__()
         self.server_address = server_address
         self.queue = deque
         self.debug = debug
         self.streams = streams
-        self.devices: dict[tuple, Device] = devices_dict
+        self.devices: dict[tuple, Device] = {}
         self.create_clients()
         self.packet_sequence = 0
 
@@ -46,8 +42,9 @@ class SeisCompClient(multiprocessing.Process):
             if self.debug:
                 print(serialized_output_packet)
             if serialized_output_packet is not None:
-                print("Sending data...")
-                self.queue.put((self.packet_sequence, serialized_output_packet))
+                if self.debug:
+                    print("Sending data...")
+                self.queue.append((self.packet_sequence, serialized_output_packet))
                 self.packet_sequence += 1
         except Exception as e:
             print(f"Handle data exception: {e}")
@@ -60,19 +57,15 @@ class SeisCompClient(multiprocessing.Process):
             self.clients.append(client)
 
     def process_client(self, client):
-        # try:
-        client.run()
-        # except Exception as e:
-        #     print(f"Failed to connect to SeedLink server: {e}")
+        try:
+            client.run()
+        except Exception as e:
+            print(f"Failed to connect to SeedLink server: {e}")
     
     def run(self) -> None:
         while True:
             for client in self.clients:
                 self.process_client(client)
-
-manager = multiprocessing.Manager()
-devices_dict = manager.dict()
-queue = manager.Queue(maxsize=20)
 
 server_address: str ='192.168.0.105:18000'
 streams: list[tuple[str, str, str]] = [
@@ -85,23 +78,22 @@ streams: list[tuple[str, str, str]] = [
 # Add more streams as needed
 ]
 debug=False
+queue = deque(maxlen=20)
 client = SeisCompClient(server_address=server_address,
                 streams=streams,
                 deque=queue,
-                devices_dict=devices_dict,
                 debug=False
-).run()
-# ).start()
-# thread = threading.Thread(target=client.run).start()
+)
+thread = threading.Thread(target=client.run).start()
 
-# app = Flask(__name__)
+app = Flask(__name__)
 
-# @app.get("/devices")
-# def get_devices():
-#     return jsonify(tuple(devices_dict.keys()))
+@app.get("/devices")
+def get_devices():
+    return jsonify(tuple(client.devices.keys()))
 
-# @app.get("/data")
-# def get_latest_data():
-#     return jsonify(tuple(queue.get()))
+@app.get("/data")
+def get_latest_data():
+    return jsonify(tuple(client.queue))
 
-# app.run(host="0.0.0.0", port=5000, debug=1)
+app.run(host="0.0.0.0", port=5000, debug=1)
