@@ -93,9 +93,12 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         self.send_response(200)
         self.send_header("Content-type", "application/json")
+        self.end_headers()
         if parsed.path == "/data":
             self.wfile.write(json.dumps(tuple(queue)).encode("utf-8"))
         elif parsed.path == "/devices":
             self.wfile.write(json.dumps(tuple(client.devices.keys())).encode("utf-8"))
+        return
+
 
 HTTPServer(('0.0.0.0', 8000), Handler).serve_forever()
