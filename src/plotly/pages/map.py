@@ -42,11 +42,13 @@ MAP_LAYOUT = html.Main(
                                 )
                             ]
                         ),
-                        DEVICES_ITEMS := html.Tbody(
-                        ),
-                    ]
+                        DEVICES_ITEMS := html.Tbody(),
+                    ],
                 ),
                 dl.Map(
+                    [
+                        dl.TileLayer(),
+                    ],
                     id="map",
                     className="system-map",
                 ),
@@ -77,7 +79,7 @@ MAP_LAYOUT = html.Main(
                             ),
                             EVENT_LOGS := html.Tbody(),
                         ]
-                    )
+                    ),
                 ),
                 html.Div(
                     className="metrics-map-block",
@@ -92,4 +94,4 @@ MAP_LAYOUT = html.Main(
     ],
 )
 
-dash.register_page(__name__, "/map", layout=MAP_LAYOUT) 
+dash.register_page(__name__, "/map", layout=MAP_LAYOUT)
