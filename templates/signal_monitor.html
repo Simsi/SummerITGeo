@@ -1,12 +1,10 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Signal Monitor</title>
+    <title>Signal Monitor</title> <!-- Structure can use rewrriting, this code duplication makes modifying harder -->
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script> <!-- can it be placed in the body? -->
 </head>
 <body>
     <header>
@@ -72,7 +70,7 @@
                     lpf: parseFloat(lpf),
                     hpf: parseFloat(hpf),
                     threshold: parseFloat(threshold)
-                });
+                }); 
             }
         });
 
@@ -82,6 +80,7 @@
             document.getElementById('threshold').value = data.threshold;
         });
 
+        <!-- i seem to miss something, but that looks like a dynamic adding of devices to select -->
         socket.on('new_device', (device) => {
             const deviceSelect = document.getElementById('deviceSelect');
             const option = document.createElement('option');
