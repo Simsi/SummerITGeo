@@ -5,22 +5,85 @@ from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-SENSORS_LAYOUT = html.Div(
-    [
-        SENSORS_PLOTS := dcc.Graph(
-            id="graph",
+SENSORS_LAYOUT = html.Main(
+    className="signal-monitor-main",
+    children=[
+        html.Div(
+            className="config-block",
+            children=[
+                html.Label(
+                    htmlFor="deviceSelect",
+                    children="Select Device: ",
+                ),
+                DEVICE_SELECT := dcc.Dropdown(
+                    id="deviceSelect",
+                    options={},
+                    value=None,
+                ),
+                DEVICE_SELECT_BTN := html.Button(
+                    id="selectDeviceBtn",
+                    children="Select Device",
+                ),
+                html.Div(
+                    className="input-group",
+                    children=[
+                        html.Label(
+                            htmlFor="lpf",
+                            children="LPF: ",
+                        ),
+                        LFP := dcc.Input(id="lpf", type="number"),
+                        html.Label(
+                            htmlFor="hpf",
+                            children="HPF: ",
+                        ),
+                        HPF := dcc.Input(id="hpf", type="number"),
+                        html.Label(
+                            htmlFor="threshold",
+                            children="Threshold: ",
+                        ),
+                        THRESHOLD := dcc.Input(id="threshold", type="number"),
+                    ],
+                ),
+                UPDATE_CONFIG_BTN := html.Button(id="updateConfigBtn", children="Update Configuration"),
+            ],
         ),
-        DATA_GET_INTERVAL := dcc.Interval(
-            id="data-get-interval", interval=200, n_intervals=0
+        html.Div(
+            className="signal-block",
+            children=[
+                SENSORS_PLOTS := dcc.Graph(
+                    id="graph",
+                ),
+                DATA_GET_INTERVAL := dcc.Interval(
+                    id="data-get-interval", interval=200, n_intervals=0
+                ),
+                DATA_UPDATE_INTERVAL := dcc.Interval(
+                    id="data-update-interval",
+                    interval=20,
+                    n_intervals=0,
+                    disabled=True,
+                ),
+                SENSORS_BUFFER_STORE := dcc.Store(id="storage", storage_type="memory"),
+            ]
         ),
-        DATA_UPDATE_INTERVAL := dcc.Interval(
-            id="data-update-interval",
-            interval=20,
-            n_intervals=0,
-            disabled=True,
+        html.Div(
+            className="signal-spectrogram-block",
+            children=[
+                SPECTROGRAM_PLOTS := dcc.Graph(),
+            ],
         ),
-        SENSORS_BUFFER_STORE := dcc.Store(id="storage", storage_type="memory"),
-    ]
+        html.Div(
+            className="metrics-block",
+            children="Metrics block 1",
+        ),
+        html.Div(
+            className="metrics-block",
+            children="Metrics block 2",
+        ),
+        html.Div(
+            className="metrics-block",
+            children="Metrics block 3",
+        ),
+    ],
 )
 
 

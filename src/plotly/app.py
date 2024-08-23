@@ -8,18 +8,23 @@ app = dash.Dash(
     __name__, use_pages=True, pages_folder=pages_folder, prevent_initial_callbacks=True
 )
 
-app.layout = html.Div(
-    [
-        html.Div(
-            [
-                html.Div(
-                    dcc.Link(
-                        f"{page['name']} - {page['path']}", href=page["relative_path"]
-                    )
-                )
-                for page in dash.page_registry.values()
-            ]
-        ),
-        dash.page_container,
-    ]
-)
+app.layout = [
+    html.Header(
+        [
+            html.Div(
+                "LOGO",
+                id="logo",
+            ),
+            html.H1("Seismic Activity Monitoring"),
+        ]
+    ),
+    html.Nav(
+        [
+            dcc.Link(
+                f"{page['name']}", href=page["relative_path"]
+            )
+            for page in dash.page_registry.values()
+        ]
+    ),
+    dash.page_container,
+]
