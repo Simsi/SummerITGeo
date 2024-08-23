@@ -93,6 +93,24 @@ SENSORS_LAYOUT = html.Main(
     prevent_initial_call=True,
 )
 def on_data_update(n_intervals, device_network_station_id: str):
+    """
+    Callback function that updates the data in the SENSORS_BUFFER_STORE component.
+
+    Parameters:
+        n_intervals (int): The number of intervals that have elapsed since the last update.
+        device_network_station_id (str): The selected device network and station ID.
+
+    Returns:
+        dict: The JSON response from the HTTP request to the server into the DATA_GET_INTERVAL component.
+
+    Raises:
+        PreventUpdate: If the HTTP request returns a status code other than 200.
+
+    This function is triggered when the DATA_GET_INTERVAL component's n_intervals property changes, which occurs every 200 milliseconds.
+    It makes a GET request to the server at http://127.0.0.1:8000/data/{device_network_station_id} which is http://127.0.0.1:8000/data/{network}/{device_id}
+    and returns the JSON response if the request is successful (status code 200).
+    Otherwise, it raises a PreventUpdate exception to prevent the component from updating.
+    """
     resp = requests.get(f"http://127.0.0.1:8000/data/{device_network_station_id}")
     if resp.status_code == 200:
         return resp.json()
@@ -106,6 +124,18 @@ def on_data_update(n_intervals, device_network_station_id: str):
     prevent_initial_call=False,
 )
 def update_devices(n_clicks):
+    """
+    Updates the options for the DEVICE_SELECT component by doing a GET request to http://127.0.0.1:8000/devices.
+
+    Parameters:
+        n_clicks (int): The number of clicks on the UPDATE_DEVICES_BTN component.
+
+    Returns:
+        dict: A dictionary of device options where the keys are the device network and station IDs(in format "{network}/{station_id}" for simplicity), and the values are the corresponding device names.
+
+    Raises:
+        PreventUpdate: If the HTTP request to retrieve the device options fails. Which does nothing.
+    """
     resp = requests.get("http://127.0.0.1:8000/devices")
     device_options = {}
     jsoned = resp.json()
@@ -123,6 +153,18 @@ def update_devices(n_clicks):
     prevent_initial_call=True,
 )
 def on_device_selection(device_network_station_id):
+    """
+    Callback function that updates the disabled status of the DATA_GET_INTERVAL component.
+
+    Parameters:
+        device_network_station_id (Any): The selected device network and station ID.
+
+    Returns:
+        bool: False to enable the DATA_GET_INTERVAL component.
+
+    This function is triggered when the DEVICE_SELECT component's value property changes.
+    It returns False to enable the DATA_GET_INTERVAL component.
+    """
     return False
 
 
@@ -132,6 +174,15 @@ def on_device_selection(device_network_station_id):
     prevent_initial_call=True,
 )
 def update_graph(data):
+    """
+    Updates the figure of the SENSORS_PLOTS component based on the data stored in the SENSORS_BUFFER_STORE.
+
+    Parameters:
+        data (Any): The data stored in the SENSORS_BUFFER_STORE, containing a sequence of payloads with signal dictionaries.
+
+    Returns:
+        fig (plotly.graph_objects.Figure): The updated figure object to be displayed in the SENSORS_PLOTS component.
+    """
     seq: int
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
     ys = [[], [], []]
