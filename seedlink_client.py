@@ -68,37 +68,41 @@ class SeisCompClient:
             for client in self.clients:
                 self.process_client(client)
 
-server_address: str ='192.168.0.105:18000'
-streams: list[tuple[str, str, str]] = [
-# ('XX', '15', 'CXZ'),
-('XX', '15', 'CX?'),
-# ('XX', '18', 'CX?'),
-# ('XX', '37', 'CX?'),
-# ('XX', '38', 'CX?'),
-# ('YY', '39', 'CYZ'),
-# Add more streams as needed
-]
-debug=False
-queue = deque(maxlen=20)
-client = SeisCompClient(server_address=server_address,
-                streams=streams,
-                deque=queue,
-                debug=False
-)
-thread = threading.Thread(target=client.run).start()
+def start_client():
+    server_address: str ='192.168.0.105:18000'
+    streams: list[tuple[str, str, str]] = [
+    # ('XX', '15', 'CXZ'),
+    ('XX', '15', 'CX?'),
+    # ('XX', '18', 'CX?'),
+    # ('XX', '37', 'CX?'),
+    # ('XX', '38', 'CX?'),
+    # ('YY', '39', 'CYZ'),
+    # Add more streams as needed
+    ]
+    debug=False
+    queue = deque(maxlen=20)
+    client = SeisCompClient(server_address=server_address,
+                    streams=streams,
+                    deque=queue,
+                    debug=False
+    )
+    thread = threading.Thread(target=client.run).start()
 
-class Handler(BaseHTTPRequestHandler):
+    class Handler(BaseHTTPRequestHandler):
 
-    def do_GET(self):
-        parsed = urlparse(self.path)
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
-        if parsed.path == "/data":
-            self.wfile.write(json.dumps(tuple(queue)).encode("utf-8"))
-        elif parsed.path == "/devices":
-            self.wfile.write(json.dumps(tuple(client.devices.keys())).encode("utf-8"))
-        return
+        def do_GET(self):
+            parsed = urlparse(self.path)
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            if parsed.path == "/data":
+                self.wfile.write(json.dumps(tuple(queue)).encode("utf-8"))
+            elif parsed.path == "/devices":
+                self.wfile.write(json.dumps(tuple(client.devices.keys())).encode("utf-8"))
+            return
 
 
-HTTPServer(('0.0.0.0', 8000), Handler).serve_forever()
+    HTTPServer(('0.0.0.0', 8000), Handler).serve_forever()
+
+if __name__ == "__main__":
+    start_client()

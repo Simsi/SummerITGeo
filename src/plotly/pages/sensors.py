@@ -1,13 +1,30 @@
-from dash import Input, Output
-from .markup import SENSORS_PLOTS, SENSORS_BUFFER_STORE, DATA_GET_INTERVAL, DATA_UPDATE_INTERVAL
-from src.plotly.app import app
+from dash import html, dcc, Input, Output, callback
+import dash
 import requests
 from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
+SENSORS_LAYOUT = html.Div(
+    [
+        SENSORS_PLOTS := dcc.Graph(
+            id="graph",
+        ),
+        DATA_GET_INTERVAL := dcc.Interval(
+            id="data-get-interval", interval=200, n_intervals=0
+        ),
+        DATA_UPDATE_INTERVAL := dcc.Interval(
+            id="data-update-interval",
+            interval=20,
+            n_intervals=0,
+            disabled=True,
+        ),
+        SENSORS_BUFFER_STORE := dcc.Store(id="storage", storage_type="memory"),
+    ]
+)
 
-@app.callback(
+
+@callback(
     Output(SENSORS_BUFFER_STORE, "data"),
     Input(DATA_GET_INTERVAL, "n_intervals"),
 )
@@ -18,7 +35,8 @@ def on_data_update(n_intervals):
     else:
         raise PreventUpdate
 
-@app.callback(
+
+@callback(
     Output(SENSORS_PLOTS, "figure"),
     Input(SENSORS_BUFFER_STORE, "data"),
 )
@@ -29,12 +47,15 @@ def update_graph(data):
     total_len = 0
     for seq, payload in data:
         signal_dict = payload["signal_dict"]
-        for y, ny in zip(ys, [signal_dict["CXE"], signal_dict["CXN"], signal_dict["CXZ"]]):
+        for y, ny in zip(
+            ys, [signal_dict["CXE"], signal_dict["CXN"], signal_dict["CXZ"]]
+        ):
             total_len += len(ny)
             y.extend(ny)
     x = tuple(range(total_len // 3))
     for i, y in enumerate(ys):
-        fig.append_trace(
-            go.Scatter(x=x, y=y, name="E", mode="lines"), row=i + 1, col=1
-        )
+        fig.append_trace(go.Scatter(x=x, y=y, name="E", mode="lines"), row=i + 1, col=1)
     return fig
+
+
+dash.register_page(__name__, "/sensors", layout=SENSORS_LAYOUT)
