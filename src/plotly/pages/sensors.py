@@ -51,25 +51,22 @@ SENSORS_LAYOUT = html.Main(
             className="signal-block",
             children=[
                 SENSORS_PLOTS := dcc.Graph(
-                    id="graph",
+                    id="signal-graph",
                 ),
-                DATA_GET_INTERVAL := dcc.Interval(
-                    id="data-get-interval", interval=200, n_intervals=0
-                ),
-                DATA_UPDATE_INTERVAL := dcc.Interval(
-                    id="data-update-interval",
-                    interval=20,
-                    n_intervals=0,
-                    disabled=True,
-                ),
-                SENSORS_BUFFER_STORE := dcc.Store(id="storage", storage_type="memory"),
             ]
         ),
-        html.Div(
+        DATA_GET_INTERVAL := dcc.Interval(
+            id="data-get-interval", interval=200, n_intervals=0
+        ),
+        DATA_UPDATE_INTERVAL := dcc.Interval(
+            id="data-update-interval",
+            interval=20,
+            n_intervals=0,
+            disabled=True,
+        ),
+        SENSORS_BUFFER_STORE := dcc.Store(id="storage", storage_type="memory"),
+        SPECTROGRAM_PLOT := dcc.Graph(
             className="signal-spectrogram-block",
-            children=[
-                SPECTROGRAM_PLOTS := dcc.Graph(),
-            ],
         ),
         html.Div(
             className="metrics-block",
