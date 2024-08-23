@@ -1,11 +1,12 @@
-from obspy import Trace
-import numpy as np
 from collections import OrderedDict
 import copy
+import numpy as np
+from obspy import Trace
 from src.tools.SeedLinkTimeGroupedThreeChansPacket import SeedLinkTimeGroupedThreeChansPacket
 
 
 class Device():
+    """encapsulates working with device and its data"""
     def __init__(self, device_id: tuple = ("XX", "15"),
                  sample_rate: int = 500,
                  lpf_freq: int = 10,
@@ -19,7 +20,7 @@ class Device():
         self.lpf_freq = lpf_freq
         self.hpf_freq = hpf_freq
         self.threshold = threshold
-        self.signal_time_synchronized_packets = OrderedDict()  # dictof SeedLinkPacket
+        self.signal_time_synchronized_packets = OrderedDict()  # dict of SeedLinkPacket, got start and end time
         self.signal_packets_memory_len = signal_packets_memory_len  # 10 last packets will be saved
         self.signal_buffer = np.zeros((3, 0))  # concatenated signals
         self.signal_buffer_max_len = signal_buffer_max_len  # max len of buffer
@@ -37,13 +38,14 @@ class Device():
         self.lpf_freq = lpf_freq
         self.hpf_freq = hpf_freq
         self.threshold = threshold
-        self.signal_time_synchronized_packets = OrderedDict()  # dictof (starttime, endtime): SeedLinkPacket
+        self.signal_time_synchronized_packets = OrderedDict()  # dict of (starttime, endtime): SeedLinkPacket
         self.signal_packets_memory_len = signal_packets_memory_len  # 10 last packets will be saved
         self.signal_buffer = np.zeros((3, 0))  # concatenated signals
         self.signal_buffer_max_len = signal_buffer_max_len  # max len of buffer
 
 
     def add_one_channel_packet(self, trace: Trace = None):
+        """adds data packet to device buffer"""
         try:
             channel = trace.stats.channel
             sampling_rate = trace.stats.sampling_rate
@@ -64,7 +66,7 @@ class Device():
                 )
 
             self.signal_time_synchronized_packets[packet_time_id].update_from_new_trace(trace)
-            #self.signal_time_synchronized_packets[packet_time_id].signal_dict[channel] = np.array(signal)
+            # self.signal_time_synchronized_packets[packet_time_id].signal_dict[channel] = np.array(signal)
 
             #print(self.signal_time_synchronized_packets[packet_time_id].__dict__)
 
@@ -83,26 +85,31 @@ class Device():
 
 
     def get_last_packet(self):
+        """finds and returns most recent (by event timestamp) SeedLink packet"""
         last_key = next(reversed(self.signal_time_synchronized_packets))
         return self.signal_time_synchronized_packets[last_key]
 
 
     def is_last_packet_completed_with_all_channels(self):
+        """confirms whether latest possible packet is completed with all channels"""
         return self.get_last_packet().is_not_empty_channels_in_dict()
 
 
-    def get_last_packet(self):
-        last_key = next(reversed(self.signal_time_synchronized_packets))
-        return self.signal_time_synchronized_packets[last_key]
+    # QUESION again, why double define?
+    # def get_last_packet(self):
+    #     last_key = next(reversed(self.signal_time_synchronized_packets))
+    #     return self.signal_time_synchronized_packets[last_key]
 
 
     def serialize_packet(self, packet: SeedLinkTimeGroupedThreeChansPacket):
+        """prepares packet for transmission by converting numpy arrays? to lists"""
         copy_packet = copy.deepcopy(packet)
         for key in copy_packet.signal_dict.keys():
             copy_packet.signal_dict[key] = list(map(int, copy_packet.signal_dict[key].tolist()))
         return copy_packet.__dict__
 
     def get_last_packet_if_completed_with_all_channels(self, serialize = False):
+        """returns latest ready packet in serialized form"""
         if self.is_last_packet_completed_with_all_channels():
             if serialize:
                 return self.serialize_packet(self.get_last_packet())

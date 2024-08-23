@@ -1,12 +1,13 @@
 import threading
-from obspy.clients.seedlink.easyseedlink import create_client
-from src.tools.Device import Device
 from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 import json
+from src.tools.Device import Device
+from obspy.clients.seedlink.easyseedlink import create_client
 
 class SeisCompClient:
+    """class to handle incoming trace data from SeedLink server"""
     def __init__(self,
                 server_address: str,
                 streams: tuple[str, str, str],
@@ -34,7 +35,7 @@ class SeisCompClient:
 
             device_id = (trace.stats.network, trace.stats.station)
             # add new device if not already exists
-            if device_id not in self.devices.keys():
+            if device_id not in self.devices:
                 self.devices[device_id] = Device(trace=trace)
 
             self.devices[device_id].add_one_channel_packet(trace)
@@ -51,6 +52,7 @@ class SeisCompClient:
             print(f"Handle data exception: {e}")
 
     def create_clients(self):
+        """Create SeedLink clients for each stream."""
         self.clients = []
         for network, station, selector in self.streams:
             client = create_client(self.server_address, on_data=self.handle_data)
@@ -58,12 +60,14 @@ class SeisCompClient:
             self.clients.append(client)
 
     def process_client(self, client):
+        """trying to start a client"""
         try:
             client.run()
         except Exception as e:
             print(f"Failed to connect to SeedLink server: {e}")
-    
+
     def run(self) -> None:
+        """redefines run method"""
         while True:
             for client in self.clients:
                 self.process_client(client)
@@ -78,6 +82,7 @@ streams: list[tuple[str, str, str]] = [
 # ('YY', '39', 'CYZ'),
 # Add more streams as needed
 ]
+
 debug=False
 queue = deque(maxlen=20)
 client = SeisCompClient(server_address=server_address,
@@ -85,11 +90,14 @@ client = SeisCompClient(server_address=server_address,
                 deque=queue,
                 debug=False
 )
-thread = threading.Thread(target=client.run).start()
+#thread = #function below does not return anything
+threading.Thread(target=client.run).start()
 
 class Handler(BaseHTTPRequestHandler):
+    """handles http requests"""
 
     def do_GET(self):
+        """handles GET"""
         parsed = urlparse(self.path)
         self.send_response(200)
         self.send_header("Content-type", "application/json")
@@ -99,6 +107,7 @@ class Handler(BaseHTTPRequestHandler):
         elif parsed.path == "/devices":
             self.wfile.write(json.dumps(tuple(client.devices.keys())).encode("utf-8"))
         return
+
 
 
 HTTPServer(('0.0.0.0', 8000), Handler).serve_forever()

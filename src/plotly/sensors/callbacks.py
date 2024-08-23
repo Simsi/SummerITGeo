@@ -1,10 +1,10 @@
 from dash import Input, Output
-from .markup import SENSORS_PLOTS, SENSORS_BUFFER_STORE, DATA_GET_INTERVAL, DATA_UPDATE_INTERVAL
+from dash.exceptions import PreventUpdate
 from src.plotly.app import app
 import requests
-from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from .markup import SENSORS_PLOTS, SENSORS_BUFFER_STORE, DATA_GET_INTERVAL, DATA_UPDATE_INTERVAL
 
 
 @app.callback(
@@ -12,6 +12,7 @@ import plotly.graph_objects as go
     Input(DATA_GET_INTERVAL, "n_intervals"),
 )
 def on_data_update(n_intervals):
+    """updates site upon recievng data package"""
     resp = requests.get("http://127.0.0.1:8000/data")
     if resp.status_code == 200:
         return resp.json()
@@ -23,6 +24,7 @@ def on_data_update(n_intervals):
     Input(SENSORS_BUFFER_STORE, "data"),
 )
 def update_graph(data):
+    """updates graph"""
     seq: int
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
     ys = [[], [], []]
