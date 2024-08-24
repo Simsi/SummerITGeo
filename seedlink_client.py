@@ -7,6 +7,7 @@ import json
 from src.tools.preprocessing import SignalProcessor
 from src.tools.DeviceBuffer import DeviceBuffer
 import random
+import numpy as np
 
 
 class SeisCompClient:
@@ -71,6 +72,21 @@ class SeisCompClient:
                 self.process_client(client)
 
 
+def check_threshold(threshold, data):
+    ys = [[], [], []]
+    total_len = 0
+    for seq, payload in data:
+        signal_dict = payload["signal_dict"]
+        for y, ny in zip(
+            ys, [signal_dict["CXE"], signal_dict["CXN"], signal_dict["CXZ"]]
+        ):
+            total_len += len(ny)
+            y.extend(ny)
+    ys = np.array(ys)
+
+    return any(np.any(y > threshold) for y in ys)
+
+
 def start_client():
     server_address: str = "192.168.0.105:18000"
     streams: list[tuple[str, str, str]] = [
@@ -96,7 +112,7 @@ def start_client():
                 device_id = tuple(splitted)
                 device = client.devices[device_id]
                 
-                device_buffer = client.queues[device_id]
+                device_buffer = client.queues[device_id].jsonable()
                 # device, device_buffer = client.signal_processor.process_all_data_together(device, device_buffer)
 
                 ret = {
@@ -106,7 +122,7 @@ def start_client():
                         "HPF": device.hpf_freq,
                         "THRESHOLD": device.threshold
                     },
-                    "data": device_buffer.jsonable()
+                    "data": device_buffer
                 }
                 self.wfile.write(
                     json.dumps(ret).encode("utf-8")
@@ -116,16 +132,13 @@ def start_client():
                     json.dumps(tuple(client.devices.keys())).encode("utf-8")
                 )
             elif parsed.path == "/status":
-                # self.send_response(200)
-                # self.send_header("Content-type", "application/json")
-                # self.end_headers()
                 status = {}
                 for device_id, device in client.devices.items():
-                    device_id = "/".join(device_id)
-                    status[device_id] = {
+                    device_id_jsonable = "/".join(device_id)
+                    status[device_id_jsonable] = {
                         "gps_lat": device.gps_lat,
                         "gps_lon": device.gps_lon,
-                        "threshold_overflow": random.random() > .5
+                        "threshold_overflow": check_threshold(device.threshold, client.queues[device_id].jsonable()),
                     }
                 self.wfile.write(
                     json.dumps(status).encode("utf-8")
