@@ -5,18 +5,6 @@ from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 import json
-from dataclasses import dataclass
-from collections import defaultdict
-
-
-@dataclass
-class DeviceProcessingParams:
-    LPF: int = 10
-    HPF: int = 1
-    THRESHOLD: int = 0
-
-    def json(self):
-        return json.dumps(self.__dict__)
 
 
 class DeviceBuffer:
@@ -35,6 +23,9 @@ class DeviceBuffer:
 
     def json(self):
         return json.dumps(tuple(self.deque))
+    
+    def jsonable(self):
+        return tuple(self.deque)
 
 
 class SeisCompClient:
@@ -45,7 +36,6 @@ class SeisCompClient:
         self.queues: dict[tuple[str, str], DeviceBuffer] = {}
         self.streams = streams
         self.devices: dict[tuple, Device] = {}
-        self.device_params: dict[tuple, DeviceProcessingParams] = defaultdict(DeviceProcessingParams)
         self.create_clients()
 
     def handle_data(self, trace):
@@ -75,8 +65,6 @@ class SeisCompClient:
             if serialized_output_packet is not None:
                 if self.debug:
                     print("Sending data...")
-                serialized_output_packet["device_params"] = self.device_params[device_id].json()
-                serialized_output_packet["exceed_threshold"] = False
                 self.queues[device_id].add_data(serialized_output_packet)
         except Exception as e:
             print(f"Handle data exception: {e}")
@@ -122,9 +110,19 @@ def start_client():
             self.end_headers()
             if parsed.path.startswith("/data"):
                 splitted = parsed.path.split("/")[2:]
-                device_network, device_id = splitted
+                device_id = tuple(splitted)
+                device = client.devices[device_id]
+                ret = {
+                    "analytics": 0, # TODO: Add analytics here
+                    "device_params": {
+                        "LPF": device.lpf_freq,
+                        "HPF": device.hpf_freq,
+                        "THRESHOLD": device.threshold
+                    },
+                    "data": client.queues[device_id].jsonable()
+                }
                 self.wfile.write(
-                    client.queues[(device_network, device_id)].json().encode("utf-8")
+                    json.dumps(ret).encode("utf-8")
                 )
             elif parsed.path == "/devices":
                 self.wfile.write(
@@ -135,7 +133,10 @@ def start_client():
         def do_POST(self):
             post_dict = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             device_id = tuple(post_dict["device_id"])
-            client.device_params[device_id] = DeviceProcessingParams(post_dict["device_params"])
+            device = client.devices[device_id]
+            device.lpf_freq = post_dict["device_params"]["LPF"]
+            device.hpf_freq = post_dict["device_params"]["HPF"]
+            device.threshold = post_dict["device_params"]["THRESHOLD"]
     
     server = HTTPServer(("0.0.0.0", 8000), Handler)
     threading.Thread(target=client.run).start()
