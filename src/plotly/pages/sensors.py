@@ -187,8 +187,8 @@ def update_graph(data):
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
     ys = [[], [], []]
     total_len = 0
-    for seq, payload in data:
-        signal_dict = payload["data"]["signal_dict"]
+    for seq, payload in data["data"]:
+        signal_dict = payload["signal_dict"]
         for y, ny in zip(
             ys, [signal_dict["CXE"], signal_dict["CXN"], signal_dict["CXZ"]]
         ):
