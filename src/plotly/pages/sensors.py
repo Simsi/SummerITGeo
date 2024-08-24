@@ -1,4 +1,4 @@
-from dash import html, dcc, Input, Output, State, callback
+from dash import html, dcc, Input, Output, State, callback, Patch
 import dash
 import requests
 from dash.exceptions import PreventUpdate
@@ -149,6 +149,7 @@ def update_devices(n_clicks):
 
 @callback(
     Output(DATA_GET_INTERVAL, "disabled"),
+    Output(SENSORS_PLOTS, "figure", allow_duplicate=True),
     Input(DEVICE_SELECT, "value"),
     prevent_initial_call=True,
 )
@@ -165,11 +166,33 @@ def on_device_selection(device_network_station_id):
     This function is triggered when the DEVICE_SELECT component's value property changes.
     It returns False to enable the DATA_GET_INTERVAL component.
     """
-    return False
+    resp = requests.get(f"http://127.0.0.1:8000/data/{device_network_station_id}")
+    if resp.status_code == 200:
+        data = resp.json()
+        fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
+        ys = [[], [], []]
+        total_len = 0
+        for seq, payload in data["data"]:
+            signal_dict = payload["signal_dict"]
+            for y, ny in zip(
+                ys, [signal_dict["CXE"], signal_dict["CXN"], signal_dict["CXZ"]]
+            ):
+                total_len += len(ny)
+                y.extend(ny)
+        x = tuple(range(total_len // 3))
+        fig = Patch()
+        for i, (y, name) in enumerate(zip(ys, ["CXE", "CXN", "CXZ"])):
+            fig.append_trace(
+                go.Scatter(x=x, y=y, name=name, mode="lines"), row=i + 1, col=1
+            )
+
+        return False, fig
+    else:
+        raise PreventUpdate
 
 
 @callback(
-    Output(SENSORS_PLOTS, "figure"),
+    Output(SENSORS_PLOTS, "figure", allow_duplicate=True),
     Input(SENSORS_BUFFER_STORE, "data"),
     prevent_initial_call=True,
 )
@@ -184,7 +207,7 @@ def update_graph(data):
         fig (plotly.graph_objects.Figure): The updated figure object to be displayed in the SENSORS_PLOTS component.
     """
     seq: int
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
+    # fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
     ys = [[], [], []]
     total_len = 0
     for seq, payload in data["data"]:
@@ -195,11 +218,11 @@ def update_graph(data):
             total_len += len(ny)
             y.extend(ny)
     x = tuple(range(total_len // 3))
+    patch = Patch()
     for i, (y, name) in enumerate(zip(ys, ["CXE", "CXN", "CXZ"])):
-        fig.append_trace(
-            go.Scatter(x=x, y=y, name=name, mode="lines"), row=i + 1, col=1
-        )
-    return fig
+        patch["data"][i]["x"] = x
+        patch["data"][i]["y"] = y
+    return patch
 
 
 dash.register_page(__name__, "/sensors", layout=SENSORS_LAYOUT)
