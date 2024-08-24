@@ -76,6 +76,7 @@ class SeisCompClient:
                 if self.debug:
                     print("Sending data...")
                 serialized_output_packet["device_params"] = self.device_params[device_id].json()
+                serialized_output_packet["exceed_threshold"] = False
                 self.queues[device_id].add_data(serialized_output_packet)
         except Exception as e:
             print(f"Handle data exception: {e}")
