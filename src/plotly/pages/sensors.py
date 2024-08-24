@@ -33,17 +33,17 @@ SENSORS_LAYOUT = html.Main(
                             htmlFor="lpf",
                             children="LPF: ",
                         ),
-                        LFP := dcc.Input(id="lpf", type="number"),
+                        LFP_INPUT := dcc.Input(id="lpf", type="number"),
                         html.Label(
                             htmlFor="hpf",
                             children="HPF: ",
                         ),
-                        HPF := dcc.Input(id="hpf", type="number"),
+                        HPF_INPUT := dcc.Input(id="hpf", type="number"),
                         html.Label(
                             htmlFor="threshold",
                             children="Threshold: ",
                         ),
-                        THRESHOLD := dcc.Input(id="threshold", type="number"),
+                        THRESHOLD_INPUT := dcc.Input(id="threshold", type="number"),
                     ],
                 ),
                 UPDATE_CONFIG_BTN := html.Button(
@@ -153,12 +153,15 @@ def update_devices(n_clicks):
     Output(DATA_GET_INTERVAL, "disabled"),
     Output(SENSORS_PLOTS, "figure", allow_duplicate=True),
     Output(SPECTROGRAM_PLOT, "figure", allow_duplicate=True),
+    Output(LFP_INPUT, "value", allow_duplicate=True),
+    Output(HPF_INPUT, "value", allow_duplicate=True),
+    Output(THRESHOLD_INPUT, "value", allow_duplicate=True),
     Input(DEVICE_SELECT, "value"),
     prevent_initial_call=True,
 )
 def on_device_selection(device_network_station_id):
     """
-    Callback function that updates the disabled status of the DATA_GET_INTERVAL component.
+    Callback function that Initializes plots and updates the disabled status of the DATA_GET_INTERVAL component.
 
     Parameters:
         device_network_station_id (Any): The selected device network and station ID.
@@ -213,9 +216,25 @@ def on_device_selection(device_network_station_id):
         spec_fig.update_xaxes(range=[0, 100])
         spec_fig.update_yaxes()
 
-        return False, sens_fig, spec_fig
+        device_params = data["device_params"]
+        return False, sens_fig, spec_fig, device_params["LPF"], device_params["HPF"], device_params["THRESHOLD"]
     else:
         raise PreventUpdate
+
+
+@callback(
+    Input(UPDATE_CONFIG_BTN, "n_clicks"),
+    State(DEVICE_SELECT, "value"),
+    State(LFP_INPUT, "value"),
+    State(HPF_INPUT, "value"),
+    State(THRESHOLD_INPUT, "value"),
+)
+def on_config_update(n_clicks, device_network_station_id, lpf, hpf, threshold):
+    post_dict = {
+        "device_id": device_network_station_id.split("/"),
+        "device_params": {"LPF": lpf, "HPF": hpf, "THRESHOLD": threshold},
+    }
+    requests.post("http://127.0.0.1:8000/config", json=post_dict)
 
 
 @callback(
