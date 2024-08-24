@@ -4,6 +4,8 @@ import requests
 from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import numpy as np
+
 
 SENSORS_LAYOUT = html.Main(
     className="signal-monitor-main",
@@ -200,6 +202,36 @@ def update_graph(data):
             go.Scatter(x=x, y=y, name=name, mode="lines"), row=i + 1, col=1
         )
     return fig
+
+
+
+@callback(
+    Output(SPECTROGRAM_PLOT, "figure"),
+    Input(SENSORS_BUFFER_STORE, "data"),
+    prevent_initial_call=True,
+)
+def update_spectrogram(data):
+    if not data:
+        raise PreventUpdate
+
+    fig = go.Figure()
+    ys = [[],[], []]
+    for seq, payload in data:
+        signal_dict = payload["signal_dict"]
+        ys[0].extend(signal_dict["CXE"])
+        ys[1].extend(signal_dict["CXN"])
+        ys[2].extend(signal_dict["CXZ"])
+
+
+    for i, y in enumerate(ys):
+        if len(y) == 0:
+            continue
+        freqs = np.fft.fftfreq((len(y))
+        spectrum = np.abs(np.fft.fft(y))
+        fig.add_trace(go.Scatter(x= freqs, y = spectrum, mode = "lines"))
+
+    return fig
+
 
 
 dash.register_page(__name__, "/sensors", layout=SENSORS_LAYOUT)
