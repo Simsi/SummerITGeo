@@ -9,87 +9,82 @@ import dash_leaflet as dl
 MAP_LAYOUT = html.Main(
     className="map-main",
     children=[
-        html.Div(
-            className="device-attributes",
+        html.Table(
+            id="deviceTable",
+            className="deviceTable",
             children=[
-                html.Table(
-                    id="deviceTable",
-                    className="deviceTable",
+                html.Thead(
                     children=[
-                        html.Thead(
+                        html.Tr(
                             children=[
-                                html.Tr(
-                                    children=[
-                                        html.Th(
-                                            children="ID",
-                                        ),
-                                        html.Th(
-                                            children="Status",
-                                        ),
-                                        html.Th(
-                                            children="Last event time",
-                                        ),
-                                        html.Th(
-                                            children="Threshold",
-                                        ),
-                                        html.Th(
-                                            children="Lon",
-                                        ),
-                                        html.Th(
-                                            children="Lat",
-                                        ),
-                                    ]
-                                )
+                                html.Th(
+                                    children="ID",
+                                ),
+                                html.Th(
+                                    children="Status",
+                                ),
+                                html.Th(
+                                    children="Last event time",
+                                ),
+                                html.Th(
+                                    children="Threshold",
+                                ),
+                                html.Th(
+                                    children="Lon",
+                                ),
+                                html.Th(
+                                    children="Lat",
+                                ),
                             ]
-                        ),
-                        DEVICES_ITEMS := html.Tbody(),
-                    ],
+                        )
+                    ]
                 ),
-                MAP := dl.Map(
-                    dl.TileLayer(),
-                    center=[0, 0],
-                    zoom=6,
-                    id="map",
-                    className="system-map",
-                ),
-                html.Div(
-                    className="event-logs",
-                    children=html.Table(
-                        children=[
-                            html.Thead(
-                                children=html.Tr(
-                                    children=[
-                                        html.Th(
-                                            children="Event ID",
-                                        ),
-                                        html.Th(
-                                            children="Devices",
-                                        ),
-                                        html.Th(
-                                            children="Start time",
-                                        ),
-                                        html.Th(
-                                            children="End time",
-                                        ),
-                                        html.Th(
-                                            children="Description",
-                                        ),
-                                    ]
-                                )
-                            ),
-                            EVENT_LOGS := html.Tbody(),
-                        ]
-                    ),
-                ),
-                html.Div(
-                    className="metrics-map-block",
-                    children="Metrics map block 1",
-                ),
-                html.Div(
-                    className="metrics-map-block",
-                    children="Metrics map block 2",
-                ),
+                DEVICES_ITEMS := html.Tbody(),
             ],
+        ),
+        MAP := dl.Map(
+            dl.TileLayer(),
+            center=[0, 0],
+            zoom=6,
+            id="map",
+            className="system-map",
+        ),
+        html.Div(
+            className="event-logs",
+            children=html.Table(
+                children=[
+                    html.Thead(
+                        children=html.Tr(
+                            children=[
+                                html.Th(
+                                    children="Event ID",
+                                ),
+                                html.Th(
+                                    children="Devices",
+                                ),
+                                html.Th(
+                                    children="Start time",
+                                ),
+                                html.Th(
+                                    children="End time",
+                                ),
+                                html.Th(
+                                    children="Description",
+                                ),
+                            ]
+                        )
+                    ),
+                    EVENT_LOGS := html.Tbody(),
+                ]
+            ),
+        ),
+        html.Div(
+            className="metrics-map-block",
+            children="Metrics map block 1",
+        ),
+        html.Div(
+            className="metrics-map-block",
+            children="Metrics map block 2",
         ),
     ],
 )

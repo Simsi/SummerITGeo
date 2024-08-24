@@ -148,6 +148,7 @@ canvas {
 .map-main {
     grid-template-columns: 40% 30% 30%;  /* 1fr 1fr 1fr; */
     grid-template-rows: auto 70% 30%;
+    height: 100vh;
 }
 
 .device-attributes {
