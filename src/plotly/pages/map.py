@@ -46,9 +46,9 @@ MAP_LAYOUT = html.Main(
                     ],
                 ),
                 dl.Map(
-                    [
-                        dl.TileLayer(),
-                    ],
+                    dl.TileLayer(),
+                    center=[26.0786, 80.2457],
+                    zoom=6,
                     id="map",
                     className="system-map",
                 ),
