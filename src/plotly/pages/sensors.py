@@ -4,6 +4,8 @@ import requests
 from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import numpy as np
+
 
 SENSORS_LAYOUT = html.Main(
     className="signal-monitor-main",
@@ -223,6 +225,54 @@ def update_graph(data):
         patch["data"][i]["x"] = x
         patch["data"][i]["y"] = y
     return patch
+
+
+
+@callback(
+    Output(SPECTROGRAM_PLOT, "figure"),
+    Input(SENSORS_BUFFER_STORE, "data"),
+    prevent_initial_call=True,
+)
+
+def update_spectrogram(data):
+    if not data:
+        raise PreventUpdate
+
+    fig = go.Figure()
+    ys = [[], [], []]
+
+    for seq, payload in data["data"]:
+        signal_dict = payload["signal_dict"]
+        ys[0].extend(signal_dict["CXE"])
+        ys[1].extend(signal_dict["CXN"])
+        ys[2].extend(signal_dict["CXZ"])
+
+
+    for i, y in enumerate(ys):
+        if len(y) == 0:
+            continue
+
+        y = np.array(y) - np.mean(y)
+        window = np.hamming(len(y))
+        y = y * window
+
+        Fs = 500
+        freqs = np.fft.fftfreq(len(y), 1 / Fs)
+        spectrum = np.abs(np.fft.fft(y))
+
+
+        valid_indices = np.where((freqs >= 0) & (freqs <= 100))
+        freqs = freqs[valid_indices]
+        spectrum = spectrum[valid_indices]
+
+
+        fig.add_trace(go.Scatter(x=freqs, y=spectrum, mode="lines", name=f"Signal {i + 1}"))
+
+
+    fig.update_xaxes(range=[0, 100])
+    fig.update_yaxes()
+
+    return fig
 
 
 dash.register_page(__name__, "/sensors", layout=SENSORS_LAYOUT)
