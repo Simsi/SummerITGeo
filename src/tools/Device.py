@@ -19,6 +19,8 @@ class Device():
         self.lpf_freq = lpf_freq
         self.hpf_freq = hpf_freq
         self.threshold = threshold
+        self.gps_lat = 0
+        self.gps_lot = 0
         self.signal_time_synchronized_packets = OrderedDict()  # dictof SeedLinkPacket
         self.signal_packets_memory_len = signal_packets_memory_len  # 10 last packets will be saved
         self.signal_buffer = np.zeros((3, 0))  # concatenated signals
@@ -109,3 +111,7 @@ class Device():
 
             return self.get_last_packet()
         return None
+    
+    def update_gps(self, packet):
+        self.gps_lat = packet["gps_lat"]
+        self.gps_lon = packet["gps_lon"]

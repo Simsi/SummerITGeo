@@ -5,6 +5,7 @@ from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 import json
+import random
 
 
 class DeviceBuffer:
@@ -63,6 +64,7 @@ class SeisCompClient:
             if self.debug:
                 print(serialized_output_packet)
             if serialized_output_packet is not None:
+                self.devices[device_id].update_gps(serialized_output_packet)
                 if self.debug:
                     print("Sending data...")
                 self.queues[device_id].add_data(serialized_output_packet)
@@ -128,6 +130,21 @@ def start_client():
                 self.wfile.write(
                     json.dumps(tuple(client.devices.keys())).encode("utf-8")
                 )
+            elif parsed.path == "/status":
+                # self.send_response(200)
+                # self.send_header("Content-type", "application/json")
+                # self.end_headers()
+                status = {}
+                for device_id, device in client.devices.items():
+                    device_id = "/".join(device_id)
+                    status[device_id] = {
+                        "gps_lat": device.gps_lat,
+                        "gps_lon": device.gps_lon,
+                        "treshold_overflow": random.random() > .5
+                    }
+                self.wfile.write(
+                    json.dumps(status).encode("utf-8")
+                )
             return
         
         def do_POST(self):
@@ -137,6 +154,8 @@ def start_client():
             device.lpf_freq = post_dict["device_params"]["LPF"]
             device.hpf_freq = post_dict["device_params"]["HPF"]
             device.threshold = post_dict["device_params"]["THRESHOLD"]
+            self.send_response(200)
+            return
     
     server = HTTPServer(("0.0.0.0", 8000), Handler)
     threading.Thread(target=client.run).start()
