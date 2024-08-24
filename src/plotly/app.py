@@ -36,7 +36,6 @@ def update_status(_):
     resp = requests.get("http://127.0.0.1:8000/status")
     if resp.status_code == 200:
         jsoned = resp.json()
-        print(jsoned)
         return jsoned
     else:
         raise PreventUpdate

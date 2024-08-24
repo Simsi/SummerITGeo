@@ -1,32 +1,12 @@
 import threading
 from obspy.clients.seedlink.easyseedlink import create_client
 from src.tools.Device import Device
-from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 import json
+from src.tools.preprocessing import SignalProcessor
+from src.tools.DeviceBuffer import DeviceBuffer
 import random
-
-
-class DeviceBuffer:
-    def __init__(self, maxlen=20):
-        self.seq = 0
-        self.deque = deque(maxlen=maxlen)
-        # self.long_deque = deque(maxlen=1000)
-
-    def add_data(self, data):
-        self.deque.append((self.seq, data))
-        # self.long_deque.append((self.seq, data))
-        # if len(self.long_deque) == 100:
-        #     with open("long_deque.json", "w") as f:
-        #         f.write(json.dumps(tuple(self.long_deque)))
-        self.seq += 1
-
-    def json(self):
-        return json.dumps(tuple(self.deque))
-    
-    def jsonable(self):
-        return tuple(self.deque)
 
 
 class SeisCompClient:
@@ -37,6 +17,7 @@ class SeisCompClient:
         self.queues: dict[tuple[str, str], DeviceBuffer] = {}
         self.streams = streams
         self.devices: dict[tuple, Device] = {}
+        self.signal_processor = SignalProcessor()
         self.create_clients()
 
     def handle_data(self, trace):
@@ -114,6 +95,10 @@ def start_client():
                 splitted = parsed.path.split("/")[2:]
                 device_id = tuple(splitted)
                 device = client.devices[device_id]
+                
+                device_buffer = client.queues[device_id]
+                # device, device_buffer = client.signal_processor.process_all_data_together(device, device_buffer)
+
                 ret = {
                     "analytics": 0, # TODO: Add analytics here
                     "device_params": {
@@ -121,7 +106,7 @@ def start_client():
                         "HPF": device.hpf_freq,
                         "THRESHOLD": device.threshold
                     },
-                    "data": client.queues[device_id].jsonable()
+                    "data": device_buffer.jsonable()
                 }
                 self.wfile.write(
                     json.dumps(ret).encode("utf-8")
