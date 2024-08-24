@@ -188,7 +188,7 @@ def update_graph(data):
     ys = [[], [], []]
     total_len = 0
     for seq, payload in data:
-        signal_dict = payload["signal_dict"]
+        signal_dict = payload["data"]["signal_dict"]
         for y, ny in zip(
             ys, [signal_dict["CXE"], signal_dict["CXN"], signal_dict["CXZ"]]
         ):
