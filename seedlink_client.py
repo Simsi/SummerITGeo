@@ -125,7 +125,7 @@ def start_client():
                     status[device_id] = {
                         "gps_lat": device.gps_lat,
                         "gps_lon": device.gps_lon,
-                        "treshold_overflow": random.random() > .5
+                        "threshold_overflow": random.random() > .5
                     }
                 self.wfile.write(
                     json.dumps(status).encode("utf-8")

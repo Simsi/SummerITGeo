@@ -45,9 +45,9 @@ MAP_LAYOUT = html.Main(
                         DEVICES_ITEMS := html.Tbody(),
                     ],
                 ),
-                dl.Map(
+                MAP := dl.Map(
                     dl.TileLayer(),
-                    center=[26.0786, 80.2457],
+                    center=[0, 0],
                     zoom=6,
                     id="map",
                     className="system-map",
@@ -93,5 +93,36 @@ MAP_LAYOUT = html.Main(
         ),
     ],
 )
+
+
+@callback(
+    Output(MAP, "children"),
+    Input("status_store", "data"),
+)
+def update_map(data):
+    items = [dl.TileLayer()]
+    for device_id, device in data.items():
+        gps_lat = device["gps_lat"]
+        gps_lon = device["gps_lon"]
+        threshold_overflow = device["threshold_overflow"]
+        items.append(
+            dl.Marker(
+                position=[gps_lat, gps_lon],
+                children=dl.Tooltip(
+                    f"device: {device_id}",
+                ),
+            )
+        )
+        if threshold_overflow:
+            items.append(
+                dl.Circle(
+                    center=[gps_lat, gps_lon],
+                    # in meters
+                    radius=1000,
+                    color="red",
+                )
+            )
+    return items
+
 
 dash.register_page(__name__, "/map", layout=MAP_LAYOUT)
