@@ -189,8 +189,8 @@ def update_graph(data):
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
     ys = [[], [], []]
     total_len = 0
-    for seq, payload in data:
-        signal_dict = payload["data"]["signal_dict"]
+    for seq, payload in data["data"]:
+        signal_dict = payload["signal_dict"]
         for y, ny in zip(
             ys, [signal_dict["CXE"], signal_dict["CXN"], signal_dict["CXZ"]]
         ):
@@ -216,7 +216,7 @@ def update_spectrogram(data):
 
     fig = go.Figure()
     ys = [[],[], []]
-    for seq, payload in data:
+    for seq, payload in data["data"]:
         signal_dict = payload["signal_dict"]
         ys[0].extend(signal_dict["CXE"])
         ys[1].extend(signal_dict["CXN"])
@@ -226,7 +226,10 @@ def update_spectrogram(data):
     for i, y in enumerate(ys):
         if len(y) == 0:
             continue
-        freqs = np.fft.fftfreq((len(y))
+        y -= np.mean(y)
+        window = np.hamming(len(y))
+        y = y * window
+        freqs = np.fft.fftfreq(len(y))
         spectrum = np.abs(np.fft.fft(y))
         fig.add_trace(go.Scatter(x= freqs, y = spectrum, mode = "lines"))
 
