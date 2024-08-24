@@ -5,7 +5,7 @@ from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 import json
-
+from src.tools.preprocessing import SignalProcessor
 
 class DeviceBuffer:
     def __init__(self, maxlen=20):
@@ -37,6 +37,7 @@ class SeisCompClient:
         self.streams = streams
         self.devices: dict[tuple, Device] = {}
         self.create_clients()
+        self.signal_processor = SignalProcessor()
 
     def handle_data(self, trace):
         """
@@ -112,6 +113,10 @@ def start_client():
                 splitted = parsed.path.split("/")[2:]
                 device_id = tuple(splitted)
                 device = client.devices[device_id]
+                
+                device_buffer = client.queues[device_id]
+                device, device_buffer = client.signal_processor.process_all_data_together(device, device_buffer)
+
                 ret = {
                     "analytics": 0, # TODO: Add analytics here
                     "device_params": {
