@@ -210,12 +210,14 @@ def update_graph(data):
     Input(SENSORS_BUFFER_STORE, "data"),
     prevent_initial_call=True,
 )
+
 def update_spectrogram(data):
     if not data:
         raise PreventUpdate
 
     fig = go.Figure()
-    ys = [[],[], []]
+    ys = [[], [], []]
+
     for seq, payload in data["data"]:
         signal_dict = payload["signal_dict"]
         ys[0].extend(signal_dict["CXE"])
@@ -226,15 +228,28 @@ def update_spectrogram(data):
     for i, y in enumerate(ys):
         if len(y) == 0:
             continue
-        y -= np.mean(y)
+
+        y = np.array(y) - np.mean(y)
         window = np.hamming(len(y))
         y = y * window
-        freqs = np.fft.fftfreq(len(y))
+
+        Fs = 500
+        freqs = np.fft.fftfreq(len(y), 1 / Fs)
         spectrum = np.abs(np.fft.fft(y))
-        fig.add_trace(go.Scatter(x= freqs, y = spectrum, mode = "lines"))
+
+
+        valid_indices = np.where((freqs >= 0) & (freqs <= 100))
+        freqs = freqs[valid_indices]
+        spectrum = spectrum[valid_indices]
+
+
+        fig.add_trace(go.Scatter(x=freqs, y=spectrum, mode="lines", name=f"Signal {i + 1}"))
+
+
+    fig.update_xaxes(range=[0, 100])
+    fig.update_yaxes()
 
     return fig
-
 
 
 dash.register_page(__name__, "/sensors", layout=SENSORS_LAYOUT)
