@@ -5,6 +5,18 @@ from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 import json
+from dataclasses import dataclass
+from collections import defaultdict
+
+
+@dataclass
+class DeviceProcessingParams:
+    LPF: int = 10
+    HPF: int = 1
+    THRESHOLD: int = 0
+
+    def json(self):
+        return json.dumps(self.__dict__)
 
 
 class DeviceBuffer:
@@ -33,6 +45,7 @@ class SeisCompClient:
         self.queues: dict[tuple[str, str], DeviceBuffer] = {}
         self.streams = streams
         self.devices: dict[tuple, Device] = {}
+        self.device_params: dict[tuple, DeviceProcessingParams] = defaultdict(DeviceProcessingParams)
         self.create_clients()
 
     def handle_data(self, trace):
@@ -62,6 +75,7 @@ class SeisCompClient:
             if serialized_output_packet is not None:
                 if self.debug:
                     print("Sending data...")
+                serialized_output_packet["device_params"] = self.device_params[device_id].json()
                 self.queues[device_id].add_data(serialized_output_packet)
         except Exception as e:
             print(f"Handle data exception: {e}")
@@ -116,6 +130,11 @@ def start_client():
                     json.dumps(tuple(client.devices.keys())).encode("utf-8")
                 )
             return
+        
+        def do_POST(self):
+            post_dict = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            device_id = tuple(post_dict["device_id"])
+            client.device_params[device_id] = DeviceProcessingParams(post_dict["device_params"])
     
     server = HTTPServer(("0.0.0.0", 8000), Handler)
     threading.Thread(target=client.run).start()
