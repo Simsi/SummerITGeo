@@ -5,7 +5,7 @@ from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 import json
-
+from src.tools.analytics import ThresholdAnalytics, AnalyticsAgent
 
 class DeviceBuffer:
     def __init__(self, maxlen=20):
@@ -112,8 +112,14 @@ def start_client():
                 splitted = parsed.path.split("/")[2:]
                 device_id = tuple(splitted)
                 device = client.devices[device_id]
+                
+                device_buffer = client.queues[device_id]
+
                 ret = {
-                    "analytics": 0, # TODO: Add analytics here
+                    "analytics": 
+                        AnalyticsAgent().add_analytics(
+                            ThresholdAnalytics()
+                            ).run_analytics(device, device_buffer),
                     "device_params": {
                         "LPF": device.lpf_freq,
                         "HPF": device.hpf_freq,
