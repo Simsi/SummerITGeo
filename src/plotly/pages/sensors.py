@@ -152,6 +152,7 @@ def update_devices(n_clicks):
 @callback(
     Output(DATA_GET_INTERVAL, "disabled"),
     Output(SENSORS_PLOTS, "figure", allow_duplicate=True),
+    Output(SPECTROGRAM_PLOT, "figure", allow_duplicate=True),
     Input(DEVICE_SELECT, "value"),
     prevent_initial_call=True,
 )
@@ -171,7 +172,6 @@ def on_device_selection(device_network_station_id):
     resp = requests.get(f"http://127.0.0.1:8000/data/{device_network_station_id}")
     if resp.status_code == 200:
         data = resp.json()
-        fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
         ys = [[], [], []]
         total_len = 0
         for seq, payload in data["data"]:
@@ -182,13 +182,38 @@ def on_device_selection(device_network_station_id):
                 total_len += len(ny)
                 y.extend(ny)
         x = tuple(range(total_len // 3))
-        fig = Patch()
+        sens_fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
         for i, (y, name) in enumerate(zip(ys, ["CXE", "CXN", "CXZ"])):
-            fig.append_trace(
+            sens_fig.append_trace(
                 go.Scatter(x=x, y=y, name=name, mode="lines"), row=i + 1, col=1
             )
+        
+        spec_fig = go.Figure()
 
-        return False, fig
+        for i, (y, name) in enumerate(zip(ys, ["CXE", "CXN", "CXZ"])):
+            if len(y) == 0:
+                continue
+
+            y = np.array(y) - np.mean(y)
+            window = np.hamming(len(y))
+            y = y * window
+
+            Fs = 500
+            freqs = np.fft.fftfreq(len(y), 1 / Fs)
+            spectrum = np.abs(np.fft.fft(y))
+
+
+            valid_indices = np.where((freqs >= 0) & (freqs <= 100))
+            freqs = freqs[valid_indices]
+            spectrum = spectrum[valid_indices]
+
+            
+            spec_fig.add_trace(go.Scatter(x=freqs, y=spectrum, mode="lines", name=name))
+
+        spec_fig.update_xaxes(range=[0, 100])
+        spec_fig.update_yaxes()
+
+        return False, sens_fig, spec_fig
     else:
         raise PreventUpdate
 
@@ -229,7 +254,7 @@ def update_graph(data):
 
 
 @callback(
-    Output(SPECTROGRAM_PLOT, "figure"),
+    Output(SPECTROGRAM_PLOT, "figure", allow_duplicate=True),
     Input(SENSORS_BUFFER_STORE, "data"),
     prevent_initial_call=True,
 )
@@ -238,7 +263,7 @@ def update_spectrogram(data):
     if not data:
         raise PreventUpdate
 
-    fig = go.Figure()
+    fig = Patch()
     ys = [[], [], []]
 
     for seq, payload in data["data"]:
@@ -265,12 +290,13 @@ def update_spectrogram(data):
         freqs = freqs[valid_indices]
         spectrum = spectrum[valid_indices]
 
+        fig["data"][i]["x"] = freqs
+        fig["data"][i]["y"] = spectrum
+        # fig.add_trace(go.Scatter(x=freqs, y=spectrum, mode="lines", name=f"Signal {i + 1}"))
 
-        fig.add_trace(go.Scatter(x=freqs, y=spectrum, mode="lines", name=f"Signal {i + 1}"))
 
-
-    fig.update_xaxes(range=[0, 100])
-    fig.update_yaxes()
+    # fig.update_xaxes(range=[0, 100])
+    # fig.update_yaxes()
 
     return fig
 
